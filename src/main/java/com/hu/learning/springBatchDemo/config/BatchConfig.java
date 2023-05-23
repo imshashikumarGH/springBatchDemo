@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Slf4j
@@ -81,6 +83,7 @@ public class BatchConfig {
                 .reader(customerReader())
                 .processor(customerProcessor())
                 .writer(customerWriter())
+                .taskExecutor(taskExecutor())
                 .build();
     }
 
@@ -90,5 +93,14 @@ public class BatchConfig {
                 .flow(step())
                 .end()
                 .build();
+    }
+
+    // this will execute the process in much lesser time due to concurrency and multiple thread in this case- 10 threads
+    // data won't be in sequence it just based on thread and CPU allocation
+    @Bean
+    public TaskExecutor taskExecutor() {
+        SimpleAsyncTaskExecutor simpleAsyncTaskExecutor = new SimpleAsyncTaskExecutor();
+        simpleAsyncTaskExecutor.setConcurrencyLimit(10);
+        return simpleAsyncTaskExecutor;
     }
 }
