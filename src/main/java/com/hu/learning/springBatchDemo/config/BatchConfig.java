@@ -23,6 +23,8 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.format.DateTimeParseException;
+
 @Slf4j
 @Configuration
 public class BatchConfig {
@@ -89,6 +91,10 @@ public class BatchConfig {
                 .reader(customerReader())
                 .processor(customerProcessor())
                 .writer(customerWriter)
+                .faultTolerant()
+                .skipLimit(3)
+                .skip(DateTimeParseException.class)
+                .noSkip(IllegalArgumentException.class)
                 .build();
     }
 
