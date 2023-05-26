@@ -12,7 +12,7 @@ public class RangePartitioner implements Partitioner {
     @Override
     public Map<String, ExecutionContext> partition(int gridSize) {
         int min = 1;
-        int max = 1000;
+        int max = 15;
         int targetSize = (max - min) / gridSize + 1;//500
         log.debug("targetSize : " + targetSize);
         Map<String, ExecutionContext> result = new HashMap<>();
