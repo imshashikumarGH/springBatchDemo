@@ -14,7 +14,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/jobs")
@@ -28,15 +33,25 @@ public class JobController {
     Job job;
 
     @PostMapping("/importCustomer")
-    public ResponseEntity<String> importCSVtoDB() {
-        JobParameters jobParameter = new JobParametersBuilder().addLong("startAt", System.currentTimeMillis()).toJobParameters();
+    public ResponseEntity<String> importCSVtoDB(@RequestParam MultipartFile multipartFile) throws IOException {
+
+        //to append the path from JobParameter
+        String inputFile = multipartFile.getOriginalFilename();
+        File fileFromInput = new File(System.getProperty("user.dir") + "/" + inputFile);
+        multipartFile.transferTo(fileFromInput);
+
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("fileName", fileFromInput.getAbsolutePath())
+                .addLong("startAt", System.currentTimeMillis()).toJobParameters();
 
         try {
-            jobLauncher.run(job, jobParameter);
+            jobLauncher.run(job, jobParameters);
         } catch (JobExecutionAlreadyRunningException | JobRestartException | JobInstanceAlreadyCompleteException |
                  JobParametersInvalidException e) {
             log.info("Error >>> " + e.getMessage());
         }
+
+        fileFromInput.delete();
 
         return new ResponseEntity<>("Job Run Successfully", HttpStatus.OK);
     }
