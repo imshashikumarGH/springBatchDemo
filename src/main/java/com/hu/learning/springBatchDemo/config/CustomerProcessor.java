@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 public class CustomerProcessor implements ItemProcessor<Customer, Customer> {
     @Override
-    public Customer process(Customer customer) throws Exception {
+    public Customer process(Customer customer) {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         if (LocalDate.parse(customer.getDob(), dateFormatter).isBefore(LocalDate.now().minusYears(18))) {
             log.info("customer info - {} ", customer);

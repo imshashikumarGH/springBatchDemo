@@ -1,9 +1,11 @@
 package com.hu.learning.springBatchDemo.config;
 
 import com.hu.learning.springBatchDemo.entity.Customer;
+import com.hu.learning.springBatchDemo.listener.CustomSkipListener;
 import com.hu.learning.springBatchDemo.partition.RangePartitioner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.partition.PartitionHandler;
@@ -92,9 +94,10 @@ public class BatchConfig {
                 .processor(customerProcessor())
                 .writer(customerWriter)
                 .faultTolerant()
-                .skipLimit(3)
+                .listener(skipListener())
+                .skipLimit(1000)
                 .skip(DateTimeParseException.class)
-                .noSkip(IllegalArgumentException.class)
+                //.noSkip(IllegalArgumentException.class)
                 .build();
     }
 
@@ -123,5 +126,10 @@ public class BatchConfig {
         taskExecutor.setCorePoolSize(4);
         taskExecutor.setQueueCapacity(4);
         return taskExecutor;
+    }
+
+    @Bean
+    public SkipListener skipListener() {
+        return new CustomSkipListener();
     }
 }
