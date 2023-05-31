@@ -2,6 +2,7 @@ package com.hu.learning.springBatchDemo.config;
 
 import com.hu.learning.springBatchDemo.entity.Customer;
 import com.hu.learning.springBatchDemo.listener.CustomSkipListener;
+import com.hu.learning.springBatchDemo.listener.CustomStepListener;
 import com.hu.learning.springBatchDemo.partition.RangePartitioner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -42,6 +43,9 @@ public class BatchConfig {
 
     @Autowired
     CustomerWriter customerWriter;
+
+    @Autowired
+    CustomStepListener customStepListener;
 
     @Bean
     @StepScope
@@ -96,6 +100,7 @@ public class BatchConfig {
                 .reader(customerReader)
                 .processor(customerProcessor())
                 .writer(customerWriter)
+                .listener(customStepListener)
                 .faultTolerant()
                 .listener(skipListener())
                 .skipLimit(1000)
