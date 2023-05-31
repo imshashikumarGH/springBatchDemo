@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.partition.PartitionHandler;
 import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
@@ -19,8 +18,8 @@ import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.support.SynchronizedItemStreamReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
@@ -48,14 +47,18 @@ public class BatchConfig {
     CustomStepListener customStepListener;
 
     @Bean
-    @StepScope
-    public FlatFileItemReader<Customer> customerReader(@Value("#{jobParameters['fileName']}") String pathToFile) {
+    public SynchronizedItemStreamReader<Customer> customerReader() {
         FlatFileItemReader<Customer> customerFlatFileItemReader = new FlatFileItemReader<>();
-        customerFlatFileItemReader.setResource(new FileSystemResource(new File(pathToFile)));
+        customerFlatFileItemReader.setResource(new FileSystemResource(new File(System.getProperty("user.dir") + "/file")));
         customerFlatFileItemReader.setName("CSVReader");
         customerFlatFileItemReader.setLinesToSkip(1);
         customerFlatFileItemReader.setLineMapper(lineMapper());
-        return customerFlatFileItemReader;
+        //return customerFlatFileItemReader;
+
+        SynchronizedItemStreamReader<Customer> customerSynchronizedItemStreamReader = new SynchronizedItemStreamReader<>();
+        customerSynchronizedItemStreamReader.setDelegate(customerFlatFileItemReader);
+        return customerSynchronizedItemStreamReader;
+
     }
 
     private LineMapper<Customer> lineMapper() {
@@ -85,7 +88,7 @@ public class BatchConfig {
     }
 
     @Bean
-    public PartitionHandler partitionHandler(FlatFileItemReader<Customer> customerReader) {
+    public PartitionHandler partitionHandler(SynchronizedItemStreamReader<Customer> customerReader) {
         TaskExecutorPartitionHandler taskExecutorPartitionHandler = new TaskExecutorPartitionHandler();
         taskExecutorPartitionHandler.setGridSize(4);
         taskExecutorPartitionHandler.setTaskExecutor(taskExecutor());
@@ -94,7 +97,7 @@ public class BatchConfig {
     }
 
     @Bean
-    public Step slaveStep(FlatFileItemReader<Customer> customerReader) {
+    public Step slaveStep(SynchronizedItemStreamReader<Customer> customerReader) {
         return new StepBuilder("slaveStep", jobRepository)
                 .<Customer, Customer>chunk(250, platformTransactionManager)
                 .reader(customerReader)
@@ -110,7 +113,7 @@ public class BatchConfig {
     }
 
     @Bean
-    public Step masterStep(FlatFileItemReader<Customer> customerReader) {
+    public Step masterStep(SynchronizedItemStreamReader<Customer> customerReader) {
         return new StepBuilder("master-step-to-import-Csv-customer-info", jobRepository)
                 .partitioner(slaveStep(customerReader).getName(), partitioner())
                 .partitionHandler(partitionHandler(customerReader))
@@ -118,7 +121,7 @@ public class BatchConfig {
     }
 
     @Bean
-    public Job job(FlatFileItemReader<Customer> customerReader) {
+    public Job job(SynchronizedItemStreamReader<Customer> customerReader) {
         return new JobBuilder("job-to-import-CSV-customer-info", jobRepository)
                 .flow(masterStep(customerReader))
                 .end()

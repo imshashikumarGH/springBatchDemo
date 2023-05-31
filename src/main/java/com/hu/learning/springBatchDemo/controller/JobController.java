@@ -37,7 +37,7 @@ public class JobController {
 
         //to append the path from JobParameter
         String inputFile = multipartFile.getOriginalFilename();
-        File fileFromInput = new File(System.getProperty("user.dir") + "/" + inputFile);
+        File fileFromInput = new File(System.getProperty("user.dir") + "/file");
         multipartFile.transferTo(fileFromInput);
 
         JobParameters jobParameters = new JobParametersBuilder()
